@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gaming Room · La Consulta</title>
+<meta name="description" content="Gaming Room LC — PCs, consolas, PS5 y simulador de F1. Torneos, competencias y servicio técnico especializado en La Consulta, San Carlos, Mendoza.">
+
+<!-- Favicon: pixel gamepad mark, matches @gaming_roomlc profile icon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff2e9a'/%3E%3Cstop offset='1' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230a0912'/%3E%3Cpath d='M18 26h6v6h6v6h-6v6h-6v-6h-6v-6h6z' fill='url(%23g)'/%3E%3Ccircle cx='44' cy='28' r='4' fill='url(%23g)'/%3E%3Ccircle cx='52' cy='36' r='4' fill='url(%23g)'/%3E%3Cpath d='M14 22h36a8 8 0 0 1 8 8v10a8 8 0 0 1-14.6 4.5L40 40H24l-3.4 4.5A8 8 0 0 1 6 40V30a8 8 0 0 1 8-8z' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+<style>
+  :root{
+    --bg:#0a0912;
+    --bg-alt:#100d1c;
+    --bg-card:#151024;
+    --line:rgba(255,255,255,.08);
+    --text:#f3eefb;
+    --muted:#a89cc4;
+    --magenta:#ff2e9a;
+    --violet:#8b5cf6;
+    --violet-dim:#5b3fb0;
+    --grad: linear-gradient(120deg,var(--magenta),var(--violet));
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Manrope',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{
+    font-family:'Chakra Petch',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.01em;
+    line-height:1.02;
+  }
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+  ::selection{background:var(--magenta);color:#fff;}
+
+  /* noise texture */
+  body::before{
+    content:"";
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay;
+  }
+
+  /* ---------- NAV ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 24px;
+    background:rgba(10,9,18,.5);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s, background .3s, padding .3s;
+  }
+  header.scrolled{border-color:var(--line);background:rgba(10,9,18,.85);padding:12px 24px;}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:.04em;}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--bg-card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;}
+  .brand .mark svg{width:20px;height:20px;}
+  nav.links{display:flex;gap:34px;font-size:.92rem;color:var(--muted);}
+  nav.links a{transition:color .2s;}
+  nav.links a:hover{color:var(--text);}
+  .nav-cta{display:flex;gap:10px;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:11px 20px;border-radius:999px;
+    font-weight:700;font-size:.86rem;letter-spacing:.02em;
+    border:1px solid transparent;cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease, opacity .18s;
+    white-space:nowrap;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn svg{width:16px;height:16px;flex:none;}
+  .btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 24px -8px rgba(255,46,154,.6);}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--violet);}
+  .btn-sm{padding:9px 16px;font-size:.8rem;}
+  .menu-toggle{display:none;background:none;border:none;color:var(--text);width:26px;height:20px;position:relative;cursor:pointer;}
+  .menu-toggle span{position:absolute;left:0;right:0;height:2px;background:var(--text);border-radius:2px;transition:.25s;}
+  .menu-toggle span:nth-child(1){top:0;}
+  .menu-toggle span:nth-child(2){top:9px;}
+  .menu-toggle span:nth-child(3){top:18px;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;min-height:100svh;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:140px 24px 100px;
+    overflow:hidden;
+    isolation:isolate;
+  }
+  .hero-glow{
+    position:absolute;z-index:-2;border-radius:50%;
+    filter:blur(90px);opacity:.55;
+  }
+  .glow-a{width:520px;height:520px;background:var(--magenta);top:-160px;right:-120px;}
+  .glow-b{width:460px;height:460px;background:var(--violet);bottom:-180px;left:-140px;}
+
+  .floor{
+    position:absolute;z-index:-1;left:0;right:0;bottom:0;height:46%;
+    background-image:
+      linear-gradient(rgba(139,92,246,.35) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139,92,246,.35) 1px, transparent 1px);
+    background-size:56px 56px;
+    transform:perspective(340px) rotateX(62deg);
+    transform-origin:bottom;
+    mask-image:linear-gradient(to top, rgba(0,0,0,.9), transparent 92%);
+    -webkit-mask-image:linear-gradient(to top, rgba(0,0,0,.9), transparent 92%);
+    opacity:.8;
+  }
+
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line);
+    padding:7px 14px;border-radius:999px;width:fit-content;margin-bottom:26px;
+    background:rgba(255,255,255,.02);
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--magenta);box-shadow:0 0 10px var(--magenta);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  .hero h1{
+    font-size:clamp(3rem, 9vw, 6.4rem);
+    font-weight:700;
+    max-width:14ch;
+  }
+  .hero h1 .grad{
+    background:var(--grad);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p.lead{
+    margin-top:26px;max-width:46ch;font-size:1.14rem;line-height:1.6;color:var(--muted);
+  }
+  .hero-ctas{display:flex;flex-wrap:wrap;gap:14px;margin-top:38px;}
+  .scroll-cue{
+    position:absolute;bottom:34px;left:24px;display:flex;align-items:center;gap:10px;
+    font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  }
+  .scroll-cue .line{width:1px;height:34px;background:linear-gradient(var(--muted),transparent);animation:scrollLine 1.8s infinite;}
+  @keyframes scrollLine{0%{transform:scaleY(0);transform-origin:top;}50%{transform:scaleY(1);transform-origin:top;}51%{transform-origin:bottom;}100%{transform:scaleY(0);transform-origin:bottom;}}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{position:relative;padding:120px 0;}
+  .section-head{max-width:640px;margin-bottom:64px;}
+  .kicker{
+    display:block;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--magenta);font-weight:700;margin-bottom:14px;
+  }
+  .section-head h2{font-size:clamp(2.1rem,4.6vw,3.2rem);font-weight:700;}
+  .section-head p{margin-top:16px;color:var(--muted);font-size:1.05rem;line-height:1.6;max-width:52ch;}
+
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1;transform:none;}
+
+  /* ---------- ZONA GAMING ---------- */
+  .grid-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  .card{
+    background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:28px 22px;transition:border-color .25s, transform .25s;
+    position:relative;overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;opacity:0;transition:opacity .3s;
+    background:radial-gradient(220px 140px at 20% 0%, rgba(255,46,154,.16), transparent 70%);
+  }
+  .card:hover{border-color:var(--violet);transform:translateY(-6px);}
+  .card:hover::before{opacity:1;}
+  .card .icon{
+    width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:var(--grad);margin-bottom:20px;
+  }
+  .card .icon svg{width:24px;height:24px;color:#fff;}
+  .card h3{font-size:1.06rem;font-weight:600;margin-bottom:8px;letter-spacing:0;text-transform:none;}
+  .card p{color:var(--muted);font-size:.92rem;line-height:1.55;}
+
+  /* ---------- ZONA GAMING — fondo interactivo F1/racing ---------- */
+  #zona{overflow:hidden;}
+  #zona > .wrap{position:relative;z-index:1;}
+  .zona-bg{
+    position:absolute;inset:-5%;z-index:0;pointer-events:none;
+    filter:blur(3px);opacity:.55;
+    transition:transform .25s ease-out;
+    will-change:transform;
+  }
+  .zona-bg .streak{
+    position:absolute;left:-25%;width:150%;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent, rgba(255,46,154,.7) 35%, rgba(139,92,246,.7) 65%, transparent);
+    transform:rotate(-7deg);
+    animation:streakMove 5s ease-in-out infinite;
+  }
+  .zona-bg .streak:nth-child(1){top:14%;height:3px;animation-duration:4.5s;}
+  .zona-bg .streak:nth-child(2){top:26%;opacity:.7;animation-duration:6s;animation-delay:.4s;}
+  .zona-bg .streak:nth-child(3){top:40%;height:1.5px;animation-duration:5.2s;animation-delay:.9s;}
+  .zona-bg .streak:nth-child(4){top:58%;opacity:.6;animation-duration:7s;animation-delay:.2s;}
+  .zona-bg .streak:nth-child(5){top:74%;height:2.5px;animation-duration:4.8s;animation-delay:.6s;}
+  .zona-bg .streak:nth-child(6){top:88%;opacity:.5;animation-duration:6.4s;animation-delay:1.1s;}
+  @keyframes streakMove{
+    0%{transform:rotate(-7deg) translateX(-6%);}
+    50%{transform:rotate(-7deg) translateX(6%);}
+    100%{transform:rotate(-7deg) translateX(-6%);}
+  }
+  .zona-bg .gauge{
+    position:absolute;right:-140px;top:8%;width:420px;height:420px;
+    border-radius:50%;
+    background:conic-gradient(from -110deg, rgba(255,46,154,.9) 0deg, rgba(139,92,246,.9) 140deg, transparent 220deg, transparent 360deg);
+    -webkit-mask:radial-gradient(circle, transparent 62%, #000 63%, #000 74%, transparent 75%);
+    mask:radial-gradient(circle, transparent 62%, #000 63%, #000 74%, transparent 75%);
+    animation:gaugeSpin 18s linear infinite;
+  }
+  @keyframes gaugeSpin{to{transform:rotate(360deg);}}
+  .zona-bg .track{position:absolute;left:-10%;bottom:-6%;width:70%;max-width:640px;opacity:.8;}
+  .zona-bg .checker{
+    position:absolute;left:-60px;bottom:-60px;width:220px;height:220px;
+    transform:rotate(22deg);
+    background-image:
+      linear-gradient(45deg, rgba(255,255,255,.55) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.55) 75%),
+      linear-gradient(45deg, rgba(255,255,255,.55) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.55) 75%);
+    background-size:22px 22px;
+    background-position:0 0, 11px 11px;
+    -webkit-mask-image:radial-gradient(circle at 30% 30%, #000 0%, transparent 70%);
+    mask-image:radial-gradient(circle at 30% 30%, #000 0%, transparent 70%);
+  }
+
+  .tourneys{
+    margin-top:20px;display:flex;flex-wrap:wrap;gap:12px;
+  }
+  .pill{
+    border:1px solid var(--line);padding:9px 18px;border-radius:999px;font-size:.85rem;color:var(--muted);
+    display:flex;align-items:center;gap:8px;
+  }
+  .pill b{color:var(--text);font-weight:700;}
+
+  /* ---------- SERVICIO TECNICO ---------- */
+  .tech-wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center;}
+  .tech-visual{
+    position:relative;aspect-ratio:1/1;border-radius:24px;
+    background:var(--bg-card);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    perspective:900px;
+  }
+  .tech-visual .ring{
+    position:absolute;border-radius:50%;border:1px solid rgba(139,92,246,.35);
+  }
+  .r1{width:78%;height:78%;}
+  .r2{width:56%;height:56%;border-color:rgba(255,46,154,.35);}
+  .r3{width:34%;height:34%;}
+  .tech-visual .core{
+    width:22%;height:22%;border-radius:50%;background:var(--grad);
+    filter:blur(0px);box-shadow:0 0 60px rgba(255,46,154,.6);
+    animation:spin 12s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .ring{animation:spin 20s linear infinite reverse;}
+  .r2{animation-duration:14s;}
+  .r3{animation-duration:9s;animation-direction:normal;}
+
+  /* interactive water-cooled PC illustration */
+  .tech-visual-inner{
+    position:relative;z-index:2;width:78%;height:78%;
+    transform-style:preserve-3d;transition:transform .12s ease-out;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pc-fan{transform-origin:center;animation:spin 3.4s linear infinite;}
+  .pc-fan.slow{animation-duration:5.5s;animation-direction:reverse;}
+  .tech-visual:hover .pc-fan{animation-duration:1.1s;}
+  .tech-visual:hover .pc-fan.slow{animation-duration:1.6s;}
+  .coolant{stroke-dasharray:6 5;animation:coolantFlow 1.1s linear infinite;}
+  @keyframes coolantFlow{to{stroke-dashoffset:-22;}}
+  .pc-glow{animation:pcPulse 2.4s ease-in-out infinite;}
+  @keyframes pcPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+
+  .tech-list{display:flex;flex-direction:column;gap:0;}
+  .tech-item{
+    display:flex;gap:18px;padding:22px 0;border-bottom:1px solid var(--line);
+  }
+  .tech-item:first-child{padding-top:0;}
+  .tech-item .num{font-family:'Chakra Petch';font-weight:700;color:var(--violet);font-size:.9rem;padding-top:3px;}
+  .tech-item h4{font-size:1.02rem;font-weight:700;margin-bottom:6px;letter-spacing:0;text-transform:none;font-family:'Manrope';}
+  .tech-item p{color:var(--muted);font-size:.92rem;line-height:1.55;}
+
+  /* ---------- UBICACION ---------- */
+  .loc-wrap{display:grid;grid-template-columns:.85fr 1.15fr;gap:40px;align-items:stretch;}
+  .loc-info{
+    background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:38px 32px;display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .loc-row{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line);}
+  .loc-row:first-of-type{padding-top:0;}
+  .loc-row:last-of-type{border-bottom:none;}
+  .loc-row svg{width:20px;height:20px;flex:none;color:var(--magenta);margin-top:2px;}
+  .loc-row h5{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px;font-family:'Chakra Petch';}
+  .loc-row div p{font-size:.98rem;}
+  #map{
+    width:100%;height:100%;min-height:420px;border-radius:var(--radius);border:1px solid var(--line);
+    filter:saturate(.35) invert(1) hue-rotate(180deg) brightness(0.95) contrast(1.05);
+  }
+  .leaflet-popup-content-wrapper{background:#151024;color:#f3eefb;border-radius:12px;}
+  .leaflet-popup-tip{background:#151024;}
+  .leaflet-popup-content{font-family:'Manrope',sans-serif;font-size:.86rem;}
+  .leaflet-popup-content b{font-family:'Chakra Petch';}
+  .leaflet-control-attribution{filter:invert(1) hue-rotate(180deg);}
+
+  /* ---------- CTA BAND ---------- */
+  .cta-band{
+    border-radius:28px;padding:70px 48px;text-align:center;
+    background:radial-gradient(120% 160% at 50% 0%, rgba(139,92,246,.25), transparent 60%), var(--bg-card);
+    border:1px solid var(--line);position:relative;overflow:hidden;
+  }
+  .cta-band h2{font-size:clamp(1.9rem,4vw,2.8rem);margin-bottom:16px;}
+  .cta-band p{color:var(--muted);max-width:48ch;margin:0 auto 34px;font-size:1.02rem;}
+  .cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+
+  /* ---------- FOOTER ---------- */
+  footer{padding:56px 0 32px;border-top:1px solid var(--line);}
+  .foot-wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+  .foot-social{display:flex;gap:12px;}
+  .foot-social a{
+    width:40px;height:40px;border-radius:10px;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;transition:border-color .2s, transform .2s;
+  }
+  .foot-social a:hover{border-color:var(--violet);transform:translateY(-3px);}
+  .foot-social svg{width:18px;height:18px;}
+  .foot-note{color:var(--muted);font-size:.82rem;margin-top:26px;text-align:center;}
+
+  /* floating whatsapp */
+  .float-wa{
+    position:fixed;right:22px;bottom:22px;z-index:60;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--grad);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 30px -6px rgba(255,46,154,.6);
+    animation:floatPulse 2.6s infinite;
+  }
+  .float-wa svg{width:26px;height:26px;color:#fff;}
+  @keyframes floatPulse{0%,100%{box-shadow:0 10px 30px -6px rgba(255,46,154,.6);}50%{box-shadow:0 10px 40px -2px rgba(255,46,154,.85);}}
+
+  @media (max-width:920px){
+    nav.links{display:none;}
+    .menu-toggle{display:block;}
+    .grid-cards{grid-template-columns:repeat(2,1fr);}
+    .tech-wrap,.loc-wrap{grid-template-columns:1fr;}
+    .tech-visual{max-width:340px;margin:0 auto;}
+  }
+  @media (max-width:560px){
+    .grid-cards{grid-template-columns:1fr;}
+    .hero{padding-top:120px;}
+    .nav-cta .btn span.full{display:none;}
+    section{padding:90px 0;}
+    .cta-band{padding:50px 24px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  }
+  :focus-visible{outline:2px solid var(--magenta);outline-offset:3px;}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header id="header">
+  <a href="#top" class="brand">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 10h3v3h3v3H9v3H6v-3H3v-3h3z" fill="url(#gg)"/><circle cx="16.5" cy="10.5" r="1.6" fill="url(#gg)"/><circle cx="19.5" cy="13.5" r="1.6" fill="url(#gg)"/><path d="M5 8h13a3.6 3.6 0 0 1 3.6 3.6v3.8A3.6 3.6 0 0 1 15.4 18l-1.5-2H10L8.5 18A3.6 3.6 0 0 1 2 15.4v-3.8A3.6 3.6 0 0 1 5 8z" stroke="url(#gg)" stroke-width="1.4"/><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2e9a"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg>
+    </span>
+    gaming_room<span style="color:var(--magenta)">lc</span>
+  </a>
+  <nav class="links">
+    <a href="#zona">Zona Gaming</a>
+    <a href="#servicio">Servicio Técnico</a>
+    <a href="#ubicacion">Ubicación</a>
+  </nav>
+  <div class="nav-cta">
+    <a class="btn btn-ghost btn-sm" id="waNavBtn" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2zm0 18.13h-.01a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.19 8.19 0 0 1-1.27-4.35c0-4.53 3.69-8.22 8.24-8.22 2.2 0 4.27.86 5.82 2.42a8.16 8.16 0 0 1 2.41 5.81c0 4.53-3.7 8.21-8.2 8.21zm4.51-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.96-.14.16-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.24-.02-.37.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01-.16 0-.43.06-.66.31-.23.24-.86.85-.86 2.06 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.24 3.75.59.26 1.05.41 1.41.53.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.66-1.17.21-.58.21-1.08.14-1.18-.06-.11-.23-.17-.48-.29z"/></svg>
+      <span class="full">Servicio Técnico</span>
+    </a>
+    <a class="btn btn-primary btn-sm" id="igNavBtn" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/></svg>
+      Reservar
+    </a>
+  </div>
+  <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><span></span><span></span><span></span></button>
+</header>
+
+<!-- mobile menu -->
+<div id="mobileMenu" style="position:fixed;inset:0;background:rgba(8,7,14,.98);z-index:45;display:none;flex-direction:column;align-items:center;justify-content:center;gap:34px;font-family:'Chakra Petch';font-size:1.6rem;text-transform:uppercase;">
+  <a href="#zona" class="mobile-link">Zona Gaming</a>
+  <a href="#servicio" class="mobile-link">Servicio Técnico</a>
+  <a href="#ubicacion" class="mobile-link">Ubicación</a>
+</div>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="hero-glow glow-a"></div>
+  <div class="hero-glow glow-b"></div>
+  <div class="floor"></div>
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span> Valle de Uco · La Consulta, San Carlos</div>
+    <h1 class="reveal in">CONOCÉ<br><span class="grad">GAMING ROOM</span></h1>
+    <p class="lead reveal in">Gaming, tecnología y servicio técnico — todo en un solo lugar. PCs de alto rendimiento, consolas, PS5, simulador de F1 y el punto de encuentro gamer del Valle de Uco.</p>
+    <div class="hero-ctas reveal in">
+      <a class="btn btn-primary" id="igHeroBtn" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/></svg>
+        Reservar por Instagram
+      </a>
+      <a class="btn btn-ghost" id="waHeroBtn" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2zm0 18.13h-.01a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.19 8.19 0 0 1-1.27-4.35c0-4.53 3.69-8.22 8.24-8.22 2.2 0 4.27.86 5.82 2.42a8.16 8.16 0 0 1 2.41 5.81c0 4.53-3.7 8.21-8.2 8.21zm4.51-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.96-.14.16-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.24-.02-.37.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01-.16 0-.43.06-.66.31-.23.24-.86.85-.86 2.06 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.24 3.75.59.26 1.05.41 1.41.53.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.66-1.17.21-.58.21-1.08.14-1.18-.06-.11-.23-.17-.48-.29z"/></svg>
+        Escribir a Servicio Técnico
+      </a>
+    </div>
+  </div>
+  <div class="scroll-cue"><div class="line"></div>Scroll</div>
+</section>
+
+<!-- ============ ZONA GAMING ============ -->
+<section id="zona">
+  <div class="zona-bg" id="zonaBg">
+    <div class="streak"></div>
+    <div class="streak"></div>
+    <div class="streak"></div>
+    <div class="streak"></div>
+    <div class="streak"></div>
+    <div class="streak"></div>
+    <div class="gauge"></div>
+    <div class="checker"></div>
+    <svg class="track" viewBox="0 0 600 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 220 C 120 40, 260 40, 340 130 S 520 220, 580 90" stroke="url(#trackGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26"/>
+      <defs>
+        <linearGradient id="trackGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#ff2e9a"/>
+          <stop offset="1" stop-color="#8b5cf6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker">Zona Gaming</span>
+      <h2>El punto de encuentro gamer del Valle de Uco</h2>
+      <p>Viví la experiencia gaming con PCs de alto rendimiento, consolas, PS5 y simulador de F1. Partidas libres, competencias y torneos — todo lo que necesitás para jugar, competir y divertirte.</p>
+    </div>
+
+    <div class="grid-cards">
+      <div class="card reveal">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <h3>PCs gamer</h3>
+        <p>Equipos de alto rendimiento listos para los títulos más exigentes, con periféricos RGB de competición.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M6 12h.01M9 9h.01M9 15h.01M18 9a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1l-1.5 3h-7L7 15H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/></svg></div>
+        <h3>Consolas &amp; PS5</h3>
+        <p>Últimos lanzamientos y clásicos favoritos, con control total en pantallas y sonido de nivel arena.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></div>
+        <h3>Simulador de F1</h3>
+        <p>Volante y butaca de simracing para sentir la velocidad de la Fórmula 1 en primera persona.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M8 21h8M12 17v4M4 4h16v6a8 8 0 0 1-16 0V4z"/><path d="M4 6H2v2a4 4 0 0 0 4 4M20 6h2v2a4 4 0 0 1-4 4"/></svg></div>
+        <h3>Torneos &amp; competencias</h3>
+        <p>Organizamos copas y ligas locales con ranking, premios y clima de verdadero campeonato.</p>
+      </div>
+    </div>
+
+    <div class="tourneys reveal">
+      <div class="pill"><b>FC 27</b> torneo semanal</div>
+      <div class="pill"><b>F1</b> simracing</div>
+      <div class="pill"><b>SHOOTER</b> versus</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SERVICIO TECNICO ============ -->
+<section id="servicio" style="background:var(--bg-alt);">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker">Servicio Técnico</span>
+      <h2>Reparamos, mantenemos y optimizamos tus equipos</h2>
+      <p>Soluciones para PCs, notebooks y consolas — tanto problemas de hardware como de software, con diagnóstico transparente en cada paso.</p>
+    </div>
+
+    <div class="tech-wrap">
+      <div class="tech-visual reveal" id="pcVisual">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+        <div class="core" style="opacity:.5;"></div>
+        <div class="tech-visual-inner" id="pcVisualInner">
+          <svg viewBox="0 0 260 260" width="86%" height="86%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="pcGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ff2e9a"/>
+                <stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+              <radialGradient id="fanGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ff2e9a" stop-opacity=".9"/>
+                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+
+            <!-- case / tempered glass panel -->
+            <rect x="26" y="18" width="150" height="224" rx="14" fill="rgba(255,255,255,.03)" stroke="url(#pcGrad)" stroke-width="2"/>
+
+            <!-- radiator top with two fans -->
+            <rect x="34" y="26" width="134" height="26" rx="6" fill="rgba(139,92,246,.12)" stroke="rgba(139,92,246,.5)"/>
+            <g class="pc-fan" style="transform-origin:66px 39px;">
+              <circle cx="66" cy="39" r="10" fill="url(#fanGlow)"/>
+              <g stroke="#f3eefb" stroke-width="1.4" opacity=".8">
+                <path d="M66 30v18M57 39h18M60 33l12 12M72 33l-12 12"/>
+              </g>
+            </g>
+            <g class="pc-fan" style="transform-origin:136px 39px;">
+              <circle cx="136" cy="39" r="10" fill="url(#fanGlow)"/>
+              <g stroke="#f3eefb" stroke-width="1.4" opacity=".8">
+                <path d="M136 30v18M127 39h18M130 33l12 12M142 33l-12 12"/>
+              </g>
+            </g>
+
+            <!-- front intake fans -->
+            <g class="pc-fan slow" style="transform-origin:66px 150px;">
+              <circle cx="66" cy="150" r="22" fill="none" stroke="rgba(255,46,154,.5)" stroke-width="2"/>
+              <circle cx="66" cy="150" r="15" fill="url(#fanGlow)" opacity=".8"/>
+              <g stroke="#f3eefb" stroke-width="1.6">
+                <path d="M66 137v26M53 150h26M57 139l18 22M75 139l-18 22"/>
+              </g>
+            </g>
+            <g class="pc-fan slow" style="transform-origin:66px 205px;animation-delay:-1s;">
+              <circle cx="66" cy="205" r="22" fill="none" stroke="rgba(139,92,246,.5)" stroke-width="2"/>
+              <circle cx="66" cy="205" r="15" fill="url(#fanGlow)" opacity=".8"/>
+              <g stroke="#f3eefb" stroke-width="1.6">
+                <path d="M66 192v26M53 205h26M57 194l18 22M75 194l-18 22"/>
+              </g>
+            </g>
+
+            <!-- water-cooling tubes: pump to radiator -->
+            <path d="M115 150 C 150 150, 155 100, 150 52" fill="none" stroke="url(#pcGrad)" stroke-width="5" stroke-linecap="round" opacity=".85"/>
+            <path class="coolant" d="M115 150 C 150 150, 155 100, 150 52" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M115 160 C 150 160, 158 110, 152 52" fill="none" stroke="url(#pcGrad)" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+            <path class="coolant" d="M115 160 C 150 160, 158 110, 152 52" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" style="animation-delay:-.5s;"/>
+
+            <!-- pump block -->
+            <rect x="100" y="140" width="26" height="26" rx="6" fill="rgba(255,255,255,.06)" stroke="url(#pcGrad)" stroke-width="2"/>
+            <circle class="pc-glow" cx="113" cy="153" r="6" fill="url(#fanGlow)"/>
+
+            <!-- GPU with heatsink fins + RGB backplate -->
+            <rect x="40" y="180" width="90" height="30" rx="6" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.15)"/>
+            <g stroke="#8b5cf6" stroke-width="1.2" opacity=".7">
+              <path d="M48 186v18M56 186v18M64 186v18M72 186v18M80 186v18M88 186v18M96 186v18M104 186v18M112 186v18M120 186v18"/>
+            </g>
+            <rect class="pc-glow" x="40" y="207" width="90" height="3" rx="1.5" fill="url(#pcGrad)"/>
+
+            <!-- vertical RGB strip on case edge -->
+            <rect class="pc-glow" x="170" y="26" width="4" height="210" rx="2" fill="url(#pcGrad)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="tech-list reveal">
+        <div class="tech-item">
+          <span class="num">01</span>
+          <div><h4>Diagnóstico de fallas</h4><p>Revisamos hardware y software para identificar el origen real del problema antes de intervenir.</p></div>
+        </div>
+        <div class="tech-item">
+          <span class="num">02</span>
+          <div><h4>Reparación de PC y notebooks</h4><p>Solucionamos fallas de componentes, placas, fuentes y más — con repuestos confiables.</p></div>
+        </div>
+        <div class="tech-item">
+          <span class="num">03</span>
+          <div><h4>Limpieza y cambio de pasta térmica</h4><p>Mantenimiento preventivo para bajar temperaturas y recuperar el rendimiento original.</p></div>
+        </div>
+        <div class="tech-item">
+          <span class="num">04</span>
+          <div><h4>Upgrades y puesta a punto</h4><p>Mejoras de RAM, almacenamiento y GPU pensadas para sacarle más años y potencia a tu equipo.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UBICACION ============ -->
+<section id="ubicacion">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker">Ubicación</span>
+      <h2>Te esperamos en La Consulta</h2>
+      <p>Encontranos en el corazón del Valle de Uco. Consultá horarios y reservá tu turno antes de venir.</p>
+    </div>
+
+    <div class="loc-wrap reveal">
+      <div class="loc-info">
+        <div>
+          <div class="loc-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>
+            <div><h5>Dirección</h5><p>Julio Balmaceda 120, La Consulta<br>San Carlos, Mendoza</p></div>
+          </div>
+          <div class="loc-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.3 2"/></svg>
+            <div><h5>Horarios</h5><p>Todos los días · 16:00 a 00:00 hs</p></div>
+          </div>
+          <div class="loc-row">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2z"/></svg>
+            <div><h5>Servicio técnico</h5><p id="waTextLoc">Escribinos por WhatsApp</p></div>
+          </div>
+        </div>
+        <a class="btn btn-primary" id="mapsBtn" target="_blank" rel="noopener" style="margin-top:24px;justify-content:center;">
+          Cómo llegar
+        </a>
+      </div>
+      <div id="map"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA BAND ============ -->
+<section>
+  <div class="wrap">
+    <div class="cta-band reveal">
+      <h2>¿Listo para <span class="grad">jugar</span>?</h2>
+      <p>Reservá tu lugar en la Gaming Room o traé tu equipo para que le demos servicio técnico. Te respondemos al toque.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" id="igCtaBtn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/></svg>
+          Reservar en Instagram
+        </a>
+        <a class="btn btn-ghost" id="waCtaBtn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2zm0 18.13h-.01a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.19 8.19 0 0 1-1.27-4.35c0-4.53 3.69-8.22 8.24-8.22 2.2 0 4.27.86 5.82 2.42a8.16 8.16 0 0 1 2.41 5.81c0 4.53-3.7 8.21-8.2 8.21z"/></svg>
+          Consultar Servicio Técnico
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-wrap">
+      <a href="#top" class="brand" style="font-size:1rem;">
+        <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M6 10h3v3h3v3H9v3H6v-3H3v-3h3z" fill="url(#gg2)"/><circle cx="16.5" cy="10.5" r="1.6" fill="url(#gg2)"/><circle cx="19.5" cy="13.5" r="1.6" fill="url(#gg2)"/><path d="M5 8h13a3.6 3.6 0 0 1 3.6 3.6v3.8A3.6 3.6 0 0 1 15.4 18l-1.5-2H10L8.5 18A3.6 3.6 0 0 1 2 15.4v-3.8A3.6 3.6 0 0 1 5 8z" stroke="url(#gg2)" stroke-width="1.4"/><defs><linearGradient id="gg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2e9a"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg></span>
+        gaming_room<span style="color:var(--magenta)">lc</span>
+      </a>
+      <div class="foot-social">
+        <a id="igFootBtn" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/></svg></a>
+        <a id="waFootBtn" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2z"/></svg></a>
+      </div>
+    </div>
+    <p class="foot-note">© <span id="year"></span> Gaming Room LC — La Consulta, San Carlos, Mendoza.</p>
+  </div>
+</footer>
+
+<a id="waFloat" class="float-wa" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2zm0 18.13h-.01a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.19 8.19 0 0 1-1.27-4.35c0-4.53 3.69-8.22 8.24-8.22 2.2 0 4.27.86 5.82 2.42a8.16 8.16 0 0 1 2.41 5.81c0 4.53-3.7 8.21-8.2 8.21zm4.51-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.96-.14.16-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.7-.14-.24-.02-.37.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01-.16 0-.43.06-.66.31-.23.24-.86.85-.86 2.06 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.24 3.75.59.26 1.05.41 1.41.53.59.19 1.13.16 1.56.1.48-.07 1.46-.6 1.66-1.17.21-.58.21-1.08.14-1.18-.06-.11-.23-.17-.48-.29z"/></svg>
+</a>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  /* =========================================================
+     CONFIGURACIÓN — editá estos datos con los reales del local
+     ========================================================= */
+  const CONFIG = {
+    whatsappNumber: "5492612082866",      // <-- reemplazá por el número real (código país + área + número, sin + ni espacios)
+    whatsappMessage: "Hola! Quiero consultar por el servicio técnico 🎮",
+    instagramUser: "gaming_roomlc",
+    // Coordenadas exactas de Julio Balmaceda 120, La Consulta, San Carlos, Mendoza.
+    lat: -33.734548566734944,
+    lng: -69.11934721061196
+  };
+
+  const waLink = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(CONFIG.whatsappMessage)}`;
+  const igLink = `https://instagram.com/${CONFIG.instagramUser}`;
+
+  ["waNavBtn","waHeroBtn","waCtaBtn","waFootBtn","waFloat"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.href = waLink;
+  });
+  ["igNavBtn","igHeroBtn","igCtaBtn","igFootBtn"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.href = igLink;
+  });
+  document.getElementById("mapsBtn").href = `https://www.google.com/maps/search/?api=1&query=${CONFIG.lat},${CONFIG.lng}`;
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  /* nav scroll state */
+  const header = document.getElementById("header");
+  window.addEventListener("scroll", ()=>{
+    header.classList.toggle("scrolled", window.scrollY > 30);
+  });
+
+  /* mobile menu */
+  const menuToggle = document.getElementById("menuToggle");
+  const mobileMenu = document.getElementById("mobileMenu");
+  let menuOpen = false;
+  menuToggle.addEventListener("click", ()=>{
+    menuOpen = !menuOpen;
+    mobileMenu.style.display = menuOpen ? "flex" : "none";
+    menuToggle.querySelectorAll("span")[0].style.transform = menuOpen ? "translateY(9px) rotate(45deg)" : "";
+    menuToggle.querySelectorAll("span")[1].style.opacity = menuOpen ? "0" : "1";
+    menuToggle.querySelectorAll("span")[2].style.transform = menuOpen ? "translateY(-9px) rotate(-45deg)" : "";
+  });
+  document.querySelectorAll(".mobile-link").forEach(a=>{
+    a.addEventListener("click", ()=>{ menuOpen=false; mobileMenu.style.display="none"; });
+  });
+
+  /* scroll reveal */
+  const revealEls = document.querySelectorAll(".reveal");
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+    });
+  }, {threshold:.15});
+  revealEls.forEach(el=>io.observe(el));
+
+  /* Zona Gaming — fondo F1 interactivo (parallax con el mouse) */
+  const zonaSection = document.getElementById("zona");
+  const zonaBg = document.getElementById("zonaBg");
+  if(zonaSection && zonaBg){
+    zonaSection.addEventListener("mousemove", (e)=>{
+      const rect = zonaSection.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      zonaBg.style.transform = `translate(${x*24}px, ${y*18}px) scale(1.03)`;
+    });
+    zonaSection.addEventListener("mouseleave", ()=>{
+      zonaBg.style.transform = "translate(0,0) scale(1)";
+    });
+  }
+
+  /* Servicio Técnico — PC gamer con tilt 3D interactivo */
+  const pcVisual = document.getElementById("pcVisual");
+  const pcVisualInner = document.getElementById("pcVisualInner");
+  if(pcVisual && pcVisualInner){
+    pcVisual.addEventListener("mousemove", (e)=>{
+      const rect = pcVisual.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      pcVisualInner.style.transform = `rotateY(${x*22}deg) rotateX(${-y*22}deg)`;
+    });
+    pcVisual.addEventListener("mouseleave", ()=>{
+      pcVisualInner.style.transform = "rotateY(0deg) rotateX(0deg)";
+    });
+  }
+
+  /* Leaflet map */
+  const map = L.map("map", {scrollWheelZoom:false}).setView([CONFIG.lat, CONFIG.lng], 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:'&copy; OpenStreetMap contributors',
+    maxZoom:19
+  }).addTo(map);
+
+  const pinIcon = L.divIcon({
+    className:"",
+    html:`<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+          background:linear-gradient(120deg,#ff2e9a,#8b5cf6);box-shadow:0 0 18px rgba(255,46,154,.7);
+          border:2px solid #fff;"></div>`,
+    iconSize:[30,30],
+    iconAnchor:[15,28]
+  });
+
+  L.marker([CONFIG.lat, CONFIG.lng], {icon:pinIcon}).addTo(map)
+    .bindPopup("<b>Gaming Room LC</b><br>Julio Balmaceda 120, La Consulta<br>San Carlos, Mendoza")
+    .openPopup();
+</script>
+</body>
+</html>
