@@ -245,14 +245,22 @@
   }
   .pill b{color:var(--text);font-weight:700;}
 
-  /* ---------- CATALOGO ---------- */
+  /* ---------- CATALOGO — carrusel horizontal ---------- */
+  .catalog-wrap-outer{position:relative;}
   .catalog-grid{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:22px;
+    display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding:4px 4px 18px;margin:-4px -4px 0;
+    scrollbar-width:thin;scrollbar-color:var(--violet-dim) transparent;
+    -webkit-overflow-scrolling:touch;
   }
+  .catalog-grid::-webkit-scrollbar{height:6px;}
+  .catalog-grid::-webkit-scrollbar-thumb{background:var(--violet-dim);border-radius:99px;}
+  .catalog-grid::-webkit-scrollbar-track{background:transparent;}
   .product-card{
     background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
     overflow:hidden;transition:transform .25s, border-color .25s;
     display:flex;flex-direction:column;
+    flex:0 0 280px;scroll-snap-align:start;
   }
   .product-card:hover{transform:translateY(-6px);border-color:var(--violet);}
   .product-img-wrap{
@@ -274,14 +282,26 @@
   .product-wa:hover{border-color:var(--violet);}
   .product-wa svg{width:14px;height:14px;}
   .catalog-state{
-    grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--muted);
+    flex:1 0 100%;text-align:center;padding:50px 20px;color:var(--muted);
     border:1px dashed var(--line);border-radius:var(--radius);font-size:.95rem;
   }
-  .catalog-skel{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .catalog-skel{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;flex:0 0 280px;}
   .catalog-skel .product-img-wrap{background:linear-gradient(90deg, var(--bg-card), rgba(255,255,255,.05), var(--bg-card));background-size:200% 100%;animation:skel 1.4s infinite;}
   @keyframes skel{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-  @media (max-width:920px){.catalog-grid{grid-template-columns:repeat(2,1fr);}}
-  @media (max-width:560px){.catalog-grid{grid-template-columns:1fr;}}
+
+  .catalog-nav{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:42px;height:42px;border-radius:50%;
+    background:rgba(21,16,36,.9);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:border-color .2s, opacity .2s;z-index:3;
+  }
+  .catalog-nav:hover{border-color:var(--violet);}
+  .catalog-nav svg{width:18px;height:18px;}
+  .catalog-nav.prev{left:-14px;}
+  .catalog-nav.next{right:-14px;}
+  .catalog-nav.hidden{opacity:0;pointer-events:none;}
+  @media (max-width:640px){.catalog-nav{display:none;}}
 
   /* ---------- SERVICIO TECNICO ---------- */
   .tech-wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center;}
@@ -519,10 +539,18 @@
       <h2>Equipos y hardware en venta</h2>
       <p>Componentes y equipos disponibles para compra. Consultá stock y coordiná la compra directo por WhatsApp.</p>
     </div>
-    <div class="catalog-grid" id="catalogGrid">
-      <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
-      <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
-      <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
+    <div class="catalog-wrap-outer">
+      <div class="catalog-grid" id="catalogGrid">
+        <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
+        <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
+        <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
+      </div>
+      <div class="catalog-nav prev hidden" id="catalogPrev" aria-label="Anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="catalog-nav next hidden" id="catalogNext" aria-label="Siguiente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
     </div>
   </div>
 </section>
@@ -891,6 +919,32 @@
     return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
   }
 
+  const MAX_PRODUCTS = 10;
+
+  function setupCatalogNav(){
+    const grid = document.getElementById("catalogGrid");
+    const prevBtn = document.getElementById("catalogPrev");
+    const nextBtn = document.getElementById("catalogNext");
+    if(!grid || !prevBtn || !nextBtn) return;
+
+    function cardStep(){
+      const card = grid.querySelector(".product-card");
+      const gap = 20;
+      return card ? card.getBoundingClientRect().width + gap : 300;
+    }
+    function updateNavVisibility(){
+      const maxScroll = grid.scrollWidth - grid.clientWidth - 4;
+      const overflows = maxScroll > 8;
+      prevBtn.classList.toggle("hidden", !overflows || grid.scrollLeft <= 4);
+      nextBtn.classList.toggle("hidden", !overflows || grid.scrollLeft >= maxScroll);
+    }
+    prevBtn.addEventListener("click", ()=> grid.scrollBy({left:-cardStep(), behavior:"smooth"}));
+    nextBtn.addEventListener("click", ()=> grid.scrollBy({left:cardStep(), behavior:"smooth"}));
+    grid.addEventListener("scroll", updateNavVisibility);
+    window.addEventListener("resize", updateNavVisibility);
+    updateNavVisibility();
+  }
+
   function renderCatalog(rows){
     const grid = document.getElementById("catalogGrid");
     if(!grid) return;
@@ -909,10 +963,11 @@
           foto: String(get("foto") || "").trim()
         };
       })
-      .filter(p=>p.titulo);
+      .filter(p=>p.titulo)
+      .slice(0, MAX_PRODUCTS);
 
     if(clean.length === 0){
-      grid.innerHTML = `<div class="catalog-state">Todavía no hay productos cargados. Subí tu planilla <b>products.xlsx</b> con las columnas Titulo, Descripcion, Precio y Foto.</div>`;
+      grid.innerHTML = `<div class="catalog-state">Todavía no hay productos cargados. Subí tu planilla <b>products.xlsx</b> con las columnas Titulo, Descripcion, Precio y Foto (hasta ${MAX_PRODUCTS} productos).</div>`;
       return;
     }
 
@@ -936,6 +991,8 @@
         </div>
       </div>
     `).join("");
+
+    setupCatalogNav();
   }
 
   function catalogError(){
