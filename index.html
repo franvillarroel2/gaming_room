@@ -245,6 +245,44 @@
   }
   .pill b{color:var(--text);font-weight:700;}
 
+  /* ---------- CATALOGO ---------- */
+  .catalog-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:22px;
+  }
+  .product-card{
+    background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;transition:transform .25s, border-color .25s;
+    display:flex;flex-direction:column;
+  }
+  .product-card:hover{transform:translateY(-6px);border-color:var(--violet);}
+  .product-img-wrap{
+    aspect-ratio:4/3;background:linear-gradient(135deg, rgba(255,46,154,.12), rgba(139,92,246,.12));
+    display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;
+  }
+  .product-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .product-img-wrap .ph{color:var(--muted);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;}
+  .product-body{padding:20px 20px 22px;display:flex;flex-direction:column;gap:8px;flex:1;}
+  .product-body h3{font-size:1rem;font-weight:600;letter-spacing:0;text-transform:none;}
+  .product-body p{color:var(--muted);font-size:.88rem;line-height:1.5;flex:1;}
+  .product-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;}
+  .product-price{font-family:'Chakra Petch';font-weight:700;font-size:1.06rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .product-wa{
+    display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;
+    border:1px solid var(--line);font-size:.78rem;font-weight:700;color:var(--text);
+    transition:border-color .2s;white-space:nowrap;
+  }
+  .product-wa:hover{border-color:var(--violet);}
+  .product-wa svg{width:14px;height:14px;}
+  .catalog-state{
+    grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--muted);
+    border:1px dashed var(--line);border-radius:var(--radius);font-size:.95rem;
+  }
+  .catalog-skel{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .catalog-skel .product-img-wrap{background:linear-gradient(90deg, var(--bg-card), rgba(255,255,255,.05), var(--bg-card));background-size:200% 100%;animation:skel 1.4s infinite;}
+  @keyframes skel{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  @media (max-width:920px){.catalog-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:560px){.catalog-grid{grid-template-columns:1fr;}}
+
   /* ---------- SERVICIO TECNICO ---------- */
   .tech-wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:64px;align-items:center;}
   .tech-visual{
@@ -380,6 +418,7 @@
   </a>
   <nav class="links">
     <a href="#zona">Zona Gaming</a>
+    <a href="#catalogo">Catálogo</a>
     <a href="#servicio">Servicio Técnico</a>
     <a href="#ubicacion">Ubicación</a>
   </nav>
@@ -399,6 +438,7 @@
 <!-- mobile menu -->
 <div id="mobileMenu" style="position:fixed;inset:0;background:rgba(8,7,14,.98);z-index:45;display:none;flex-direction:column;align-items:center;justify-content:center;gap:34px;font-family:'Chakra Petch';font-size:1.6rem;text-transform:uppercase;">
   <a href="#zona" class="mobile-link">Zona Gaming</a>
+  <a href="#catalogo" class="mobile-link">Catálogo</a>
   <a href="#servicio" class="mobile-link">Servicio Técnico</a>
   <a href="#ubicacion" class="mobile-link">Ubicación</a>
 </div>
@@ -481,6 +521,22 @@
       <div class="pill"><b>FC 27</b> torneo semanal</div>
       <div class="pill"><b>F1</b> simracing</div>
       <div class="pill"><b>SHOOTER</b> versus</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CATALOGO ============ -->
+<section id="catalogo">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker">Catálogo</span>
+      <h2>Equipos y hardware en venta</h2>
+      <p>Componentes y equipos disponibles para compra. Consultá stock y coordiná la compra directo por WhatsApp.</p>
+    </div>
+    <div class="catalog-grid" id="catalogGrid">
+      <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
+      <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
+      <div class="catalog-skel"><div class="product-img-wrap"></div><div class="product-body"><h3>&nbsp;</h3><p>&nbsp;</p></div></div>
     </div>
   </div>
 </section>
@@ -668,6 +724,7 @@
 </a>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/[email protected]/dist/xlsx.full.min.js"></script>
 <script>
   /* =========================================================
      CONFIGURACIÓN — editá estos datos con los reales del local
@@ -678,7 +735,10 @@
     instagramUser: "gaming_roomlc",
     // Coordenadas exactas de Julio Balmaceda 120, La Consulta, San Carlos, Mendoza.
     lat: -33.734548566734944,
-    lng: -69.11934721061196
+    lng: -69.11934721061196,
+    // Planilla del catálogo: subila a la raíz del proyecto (al lado de index.html)
+    // con este mismo nombre para que el catálogo se actualice solo.
+    productsFile: "./products.xlsx"
   };
 
   const waLink = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(CONFIG.whatsappMessage)}`;
@@ -755,6 +815,87 @@
       pcVisualInner.style.transform = "rotateY(0deg) rotateX(0deg)";
     });
   }
+
+  /* ---------- CATALOGO — lee products.xlsx y arma las tarjetas ---------- */
+  function formatARS(value){
+    const n = Number(value);
+    if(isNaN(n)) return value;
+    return n.toLocaleString("es-AR", {style:"currency", currency:"ARS", maximumFractionDigits:0});
+  }
+
+  function waLinkForProduct(title){
+    const msg = `Hola! Te consulto por: ${title}`;
+    return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
+  }
+
+  function renderCatalog(rows){
+    const grid = document.getElementById("catalogGrid");
+    if(!grid) return;
+
+    // Se aceptan encabezados en mayúscula/minúscula: Titulo, Descripcion, Precio, Foto
+    const clean = rows
+      .map(r=>{
+        const get = (key)=>{
+          const k = Object.keys(r).find(kk=>kk.trim().toLowerCase() === key);
+          return k ? r[k] : "";
+        };
+        return {
+          titulo: String(get("titulo") || "").trim(),
+          descripcion: String(get("descripcion") || "").trim(),
+          precio: get("precio"),
+          foto: String(get("foto") || "").trim()
+        };
+      })
+      .filter(p=>p.titulo);
+
+    if(clean.length === 0){
+      grid.innerHTML = `<div class="catalog-state">Todavía no hay productos cargados. Subí tu planilla <b>products.xlsx</b> con las columnas Titulo, Descripcion, Precio y Foto.</div>`;
+      return;
+    }
+
+    grid.innerHTML = clean.map(p=>`
+      <div class="product-card">
+        <div class="product-img-wrap">
+          ${p.foto
+            ? `<img src="${p.foto}" alt="${p.titulo}" loading="lazy" onerror="this.closest('.product-img-wrap').innerHTML='<span class=&quot;ph&quot;>Sin imagen</span>';">`
+            : `<span class="ph">Sin imagen</span>`}
+        </div>
+        <div class="product-body">
+          <h3>${p.titulo}</h3>
+          <p>${p.descripcion}</p>
+          <div class="product-foot">
+            <span class="product-price">${p.precio !== "" ? formatARS(p.precio) : ""}</span>
+            <a class="product-wa" href="${waLinkForProduct(p.titulo)}" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.9 9.9 0 0 0 4.71 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.87 9.87 0 0 0 12.04 2z"/></svg>
+              Consultar
+            </a>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function catalogError(){
+    const grid = document.getElementById("catalogGrid");
+    if(grid) grid.innerHTML = `<div class="catalog-state">No pudimos cargar el catálogo todavía. Verificá que el archivo <b>products.xlsx</b> esté publicado junto al sitio.</div>`;
+  }
+
+  fetch(CONFIG.productsFile)
+    .then(res=>{
+      if(!res.ok) throw new Error("No se encontró products.xlsx");
+      return res.arrayBuffer();
+    })
+    .then(buffer=>{
+      const workbook = XLSX.read(buffer, {type:"array"});
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:""});
+      renderCatalog(rows);
+    })
+    .catch(err=>{
+      console.warn("Catálogo:", err.message);
+      catalogError();
+    });
 
   /* Leaflet map */
   const map = L.map("map", {scrollWheelZoom:false}).setView([CONFIG.lat, CONFIG.lng], 15);
